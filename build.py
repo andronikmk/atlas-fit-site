@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Builds the atlas-fit.fit site: home, support and privacy pages.
+"""Builds the atlas-fit.fit site: home, support, privacy and about pages.
 
     python3 build.py "/path/to/WorkoutLogApp/docs/privacy-policy.md"
 
@@ -15,6 +15,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 DOMAIN = "atlas-fit.fit"
 EMAIL = "support@atlas-fit.fit"
+# The company that publishes Atlas Fit: its exact legal name as registered on
+# Sunbiz (Florida's business register). Apple compares this site with the
+# D-U-N-S record, so it must match letter for letter, including "LLC".
+COMPANY = "Andronik Capital LLC"
+YEAR = 2026
 
 
 def page(title: str, description: str, body: str, path: str) -> str:
@@ -37,14 +42,15 @@ def page(title: str, description: str, body: str, path: str) -> str:
 <body>
 <header class="site">
   <a class="brand" href="/"><img src="/icon-180.png" alt="" width="32" height="32"><span>Atlas Fit</span></a>
-  <nav>{nav("/support/", "Support")}{nav("/privacy/", "Privacy")}</nav>
+  <nav>{nav("/support/", "Support")}{nav("/privacy/", "Privacy")}{nav("/about/", "About")}</nav>
 </header>
 <main>
 {body}
 </main>
 <footer class="site">
-  <p>Atlas Fit is a strength-training log for iPhone and Apple Watch.</p>
-  <p><a href="/support/">Support</a> · <a href="/privacy/">Privacy policy</a> · <a href="mailto:{EMAIL}">{EMAIL}</a></p>
+  <p>Atlas Fit is a strength-training log for iPhone and Apple Watch, made by {html.escape(COMPANY)}.</p>
+  <p><a href="/about/">About</a> · <a href="/support/">Support</a> · <a href="/privacy/">Privacy policy</a> · <a href="mailto:{EMAIL}">{EMAIL}</a></p>
+  <p>© {YEAR} {html.escape(COMPANY)}</p>
 </footer>
 </body>
 </html>
@@ -151,9 +157,23 @@ SUPPORT = f"""<h1>Support</h1>
 """
 
 
+def about() -> str:
+    company = html.escape(COMPANY)
+    return f"""<h1>About</h1>
+<p class="lede">Atlas Fit is made by {company}, an independent software company based in Florida.</p>
+<p>{company} designs and publishes Atlas Fit, a strength-training log for iPhone and Apple Watch, and is its seller on the App Store.</p>
+<p>Atlas Fit is built to keep your training private. There are no accounts and no servers: workouts are stored on your iPhone, and Apple Health data is read on your device. The <a href="/privacy/">privacy policy</a> has the detail.</p>
+
+<h2>Contact</h2>
+<p>For help with the app, questions about privacy, or anything else, email <a href="mailto:{EMAIL}">{EMAIL}</a>. The <a href="/support/">support page</a> answers the most common questions.</p>
+"""
+
+
 def main() -> None:
     if len(sys.argv) != 2:
         sys.exit(__doc__)
+    if not COMPANY.strip():
+        sys.exit("Set COMPANY in build.py to the company's exact legal name; not building.")
     policy = Path(sys.argv[1]).read_text(encoding="utf-8")
     if re.search(r"\[[^\]\n]*\]", policy):
         sys.exit("The policy still has a bracketed placeholder in it; not building.")
@@ -168,6 +188,9 @@ def main() -> None:
         "privacy/index.html": page("Atlas Fit privacy policy",
                                    "What data Atlas Fit handles, where it is kept and what you can do with it.",
                                    '<article class="doc policy">\n' + markdown(policy) + "\n</article>", "/privacy/"),
+        "about/index.html": page("About Atlas Fit",
+                                 f"Atlas Fit is made by {COMPANY}. Contact details for the company and the app.",
+                                 '<article class="doc">\n' + about() + "</article>", "/about/"),
         "404.html": page("Page not found · Atlas Fit", "Page not found.",
                          '<article class="doc"><h1>Page not found</h1><p>Try <a href="/support/">Support</a> or the <a href="/privacy/">privacy policy</a>.</p></article>',
                          "/404.html"),
